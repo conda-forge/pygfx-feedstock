@@ -23,7 +23,7 @@ requirements:
   run:
     - python >=3.8
     - numpy
-    - wgpu-py >=0.10.0,<0.12.0a
+    - wgpu-py >=0.12.0,<0.13.0a
     - pylinalg >=0.4.1,<0.5.0a
     - freetype-py
     - uharfbuzz
