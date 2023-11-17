@@ -1,5 +1,5 @@
 {% set name = "pygfx" %}
-{% set version = "0.1.15" %}
+{% set version = "0.1.16" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: 169b695bd6f90ed286aa1a2c3ccbdb833232bc458460275b85e0a32d2d2336d6
+  sha256: aae1c695cfb71aaf599d86fa3c38666c40fcad1dc2b907fe8f9c7f98978ce153
   patches:
     - no_clobber_license.patch
 
@@ -23,7 +23,7 @@ requirements:
   run:
     - python >=3.8
     - numpy
-    - wgpu-py >=0.10.0,<0.12.0a
+    - wgpu-py >=0.12.0,<0.13.0a
     - pylinalg >=0.4.1,<0.5.0a
     - freetype-py
     - uharfbuzz
