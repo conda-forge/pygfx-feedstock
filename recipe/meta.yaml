@@ -37,8 +37,7 @@ test:
     - packaging
   commands:
     - pip check
-    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) > Version(__wgpu_version_range__[0]), 'wgpu version too low'; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high'; print(f'wgpu version
-      {wgpu.__version__} is just right')"
+    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) >= Version(__wgpu_version_range__[0]), 'wgpu version too low'; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high'; print(f'wgpu version {wgpu.__version__} is just right')"
 
 about:
   home: https://github.com/pygfx/pygfx
