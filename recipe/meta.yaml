@@ -1,5 +1,5 @@
 {% set name = "pygfx" %}
-{% set version = "0.3.0" %}
+{% set version = "0.4.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: c1ca491f3ec1e531ad2e5e8508db54ef9583a1e6e2a3b7a2f0f0b5a59aa4cdde
+  sha256: abf2495cca36960d8bfd9b06ce8689cdb4f881490ab51bf927bc1215c189a5f2
   patches:
     - no_clobber_license.patch
 
@@ -37,7 +37,8 @@ test:
     - packaging
   commands:
     - pip check
-    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) >= Version(__wgpu_version_range__[0]), 'wgpu version too low'; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high'; print(f'wgpu version {wgpu.__version__} is just right')"
+    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) >= Version(__wgpu_version_range__[0]), 'wgpu version too low'; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high'; print(f'wgpu version
+      {wgpu.__version__} is just right')"
 
 about:
   home: https://github.com/pygfx/pygfx
