@@ -23,7 +23,7 @@ requirements:
   run:
     - python >=3.8
     - numpy
-    - wgpu-py >=0.15.1,<0.17.0a
+    - wgpu-py >=0.17.3,<0.19.0a
     - pylinalg >=0.4.1,<0.5.0a
     - freetype-py
     - uharfbuzz
@@ -37,12 +37,13 @@ test:
     - packaging
   commands:
     - pip check
-    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) >= Version(__wgpu_version_range__[0]), 'wgpu version too low'; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high'; print(f'wgpu version
-      {wgpu.__version__} is just right')"
+    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) >= Version(__wgpu_version_range__[0]), 'wgpu version too low';"
+    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high';"
+    - python -c "print(f'wgpu version {wgpu.__version__} is just right')"
 
 about:
   home: https://github.com/pygfx/pygfx
-  summary: A threejs-like render engine based on wgpu
+  summary: "Pygfx' purpose is to bring powerful and reliable visualization to the Python world. 🚀"
   license: BSD-2-Clause
   license_file: LICENSE
 
