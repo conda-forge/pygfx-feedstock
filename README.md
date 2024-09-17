@@ -7,7 +7,7 @@ Home: https://github.com/pygfx/pygfx
 
 Package license: BSD-2-Clause
 
-Summary: A threejs-like render engine based on wgpu
+Summary: Pygfx' purpose is to bring powerful and reliable visualization to the Python world. 🚀
 
 Current build status
 ====================
