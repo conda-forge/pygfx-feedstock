@@ -10,11 +10,13 @@ source:
   sha256: b8291fd279e214a249e4abd369d133a03f4b3a520f54495c116090c6f52ce009
   patches:
     - no_clobber_license.patch
+    # https://github.com/pygfx/pygfx/pull/856
+    - 856.patch
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
 
 requirements:
   host:
