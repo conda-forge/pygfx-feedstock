@@ -8,8 +8,6 @@ package:
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
   sha256: 316043588e9454108799d30f1b00d4d88d4e3d48dd39f5963fe5c0106e28163c
-  patches:
-    - no_clobber_license.patch
 
 build:
   noarch: python
