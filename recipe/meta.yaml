@@ -19,6 +19,7 @@ requirements:
     - python {{ python_min }}
     - pip
     - setuptools
+    - flit-core
   run:
     - python >={{ python_min }}
     - numpy
