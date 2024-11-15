@@ -1,5 +1,5 @@
 {% set name = "pygfx" %}
-{% set version = "0.5.0" %}
+{% set version = "0.6.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: 693a0d80515bfc94b0578859bba542c786569086bd62fd4de26d256fad54c12c
+  sha256: 316043588e9454108799d30f1b00d4d88d4e3d48dd39f5963fe5c0106e28163c
   patches:
     - no_clobber_license.patch
 
