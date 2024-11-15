@@ -1,15 +1,12 @@
-{% set name = "pygfx" %}
-{% set version = "0.5.0" %}
+{% set version = "0.6.0" %}
 
 package:
-  name: {{ name|lower }}
+  name: pygfx
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: 693a0d80515bfc94b0578859bba542c786569086bd62fd4de26d256fad54c12c
-  patches:
-    - no_clobber_license.patch
+  url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
+  sha256: 316043588e9454108799d30f1b00d4d88d4e3d48dd39f5963fe5c0106e28163c
 
 build:
   noarch: python
@@ -18,13 +15,14 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
     - setuptools
+    - flit-core
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - numpy
-    - wgpu-py >=0.17.3,<0.19.0a
+    - wgpu-py >=0.19.0,<0.20.0a
     - pylinalg >=0.4.1,<0.5.0a
     - freetype-py
     - uharfbuzz
@@ -34,14 +32,10 @@ test:
   imports:
     - pygfx
   requires:
+    - python {{ python_min }}
     - pip
-    - packaging
   commands:
     - pip check
-    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) >= Version(__wgpu_version_range__[0]), 'wgpu version too low';"
-    - python -c "from pygfx import __wgpu_version_range__; from packaging.version import Version; import wgpu; assert Version(wgpu.__version__) < Version(__wgpu_version_range__[1]), 'wgpu version too high';"
-    - python -c "import wgpu; print(f'wgpu version {wgpu.__version__} is just right')"
-
 about:
   home: https://github.com/pygfx/pygfx
   summary: "Pygfx' purpose is to bring powerful and reliable visualization to the Python world. 🚀"
