@@ -1,4 +1,4 @@
-{% set version = "0.7.0" %}
+{% set version = "0.8.0" %}
 
 package:
   name: pygfx
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: c29a58dfb16ab2439f36afd0ef7731aac1d5fdf5881c680338ef01964fb4a1e1
+  sha256: 27e86552efd39b5e10479031c346c3cc23d2fc1f37b1301d45b98c748126d25d
 
 build:
   noarch: python
@@ -24,7 +24,7 @@ requirements:
     - rendercanvas >=2
     - numpy
     - wgpu-py >=0.19.0,<0.20.0a
-    - pylinalg >=0.6.3,<0.7.0a
+    - pylinalg >=0.6.7,<0.7.0a
     - freetype-py
     - uharfbuzz
     - jinja2
