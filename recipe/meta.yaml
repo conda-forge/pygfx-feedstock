@@ -1,4 +1,4 @@
-{% set version = "0.12.0" %}
+{% set version = "0.13.0" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: d07e5a4846862e576a898dfd27aadce25a8d894f9df2e4804624a54dc846ebd8
+  sha256: 4a4ea67f410d5f365f267cbe10ada81b84ca9c4103f302c8b3b4aac129fe7447
 
 build:
   noarch: python
