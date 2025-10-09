@@ -24,12 +24,12 @@ requirements:
     - python >={{ python_min }}
     - rendercanvas >=2
     - numpy
-    - wgpu-py >=0.19.0,<0.24.0a
-    - pylinalg >=0.6.7,<0.7.0a
+    - wgpu-py >=0.19.0
+    - pylinalg >=0.6.7
     - freetype-py
     - uharfbuzz
     - jinja2
-    - hsluv >=5.0.0,<6.0.0a
+    - hsluv >=5.0.0
 
 test:
   imports:
