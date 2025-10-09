@@ -1,4 +1,4 @@
-{% set version = "0.13.0" %}
+{% set version = "0.14.0" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: 4a4ea67f410d5f365f267cbe10ada81b84ca9c4103f302c8b3b4aac129fe7447
+  sha256: 6a5da996c4d1c5d63f603b2a60ade90c70e100a0b2f9a20ee7e5a3667bb519e3
 
 build:
   noarch: python
@@ -24,12 +24,12 @@ requirements:
     - python >={{ python_min }}
     - rendercanvas >=2
     - numpy
-    - wgpu-py >=0.19.0,<0.24.0a
-    - pylinalg >=0.6.7,<0.7.0a
+    - wgpu-py >=0.19.0
+    - pylinalg >=0.6.7
     - freetype-py
     - uharfbuzz
     - jinja2
-    - hsluv >=5.0.0,<6.0.0a
+    - hsluv >=5.0.0
 
 test:
   imports:
