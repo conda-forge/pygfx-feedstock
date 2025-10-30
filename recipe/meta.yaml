@@ -24,8 +24,8 @@ requirements:
     - python >={{ python_min }}
     - rendercanvas >=2
     - numpy
-    - wgpu-py >=0.19.0
-    - pylinalg >=0.6.7
+    - wgpu-py >=0.24.0, <0.26
+    - pylinalg >=0.6.8,<0.7.0
     - freetype-py
     - uharfbuzz
     - jinja2
