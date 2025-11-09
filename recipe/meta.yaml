@@ -8,11 +8,13 @@ package:
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
   sha256: d8e17d3f8d340938e37ac0b3a6f24730efb4300bad127f98725865bb1caae13a
+  patches:
+    - 1229_allow_wgpu_0_27.patch
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
 
 requirements:
   host:
@@ -24,7 +26,7 @@ requirements:
     - python >={{ python_min }}
     - rendercanvas >=2
     - numpy
-    - wgpu-py >=0.24.0, <0.26
+    - wgpu-py >=0.24.0, <0.28
     - pylinalg >=0.6.8,<0.7.0
     - freetype-py
     - uharfbuzz
