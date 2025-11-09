@@ -1,0 +1,22 @@
+From dd2cb49f8e77f21180e81bfad22f1918093eccea Mon Sep 17 00:00:00 2001
+From: Almar Klein <almar@almarklein.org>
+Date: Thu, 6 Nov 2025 11:49:18 +0100
+Subject: [PATCH] pin to newer wgpu
+
+---
+ pyproject.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index d61355a53..c21809720 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -22,7 +22,7 @@ dependencies = [
+     # For some of these we set an upper bound because (for now) they regularly break their API.
+     # Packages that depend on PyGfx should not set an upper bound on e.g. wgpu, unless really needed!
+     "rendercanvas >= 2.2",
+-    "wgpu >=0.24.0, <0.26",
++    "wgpu >=0.24.0, <0.28",
+     "pylinalg >=0.6.8,<0.7.0",
+     # External dependencies
+     "numpy",
