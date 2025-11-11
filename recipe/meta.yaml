@@ -1,4 +1,4 @@
-{% set version = "0.15.0" %}
+{% set version = "0.15.2" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,14 +7,14 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: d8e17d3f8d340938e37ac0b3a6f24730efb4300bad127f98725865bb1caae13a
+  sha256: fdec0a4751443b68f6c484f70a56f31bfd84169c08d3701e037c9d586d4afe2b
   patches:
     - 1229_allow_wgpu_0_27.patch
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 2
+  number: 0
 
 requirements:
   host:
