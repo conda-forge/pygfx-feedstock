@@ -1,4 +1,4 @@
-{% set version = "0.15.0" %}
+{% set version = "0.15.2" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,14 +7,19 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
-  sha256: d8e17d3f8d340938e37ac0b3a6f24730efb4300bad127f98725865bb1caae13a
-  patches:
-    - 1229_allow_wgpu_0_27.patch
+  sha256: fdec0a4751443b68f6c484f70a56f31bfd84169c08d3701e037c9d586d4afe2b
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 2
+  script: 
+    # The rendercanvas breakage was somewhat hard for a few people.
+    # However, i don't think it is worth constraining too much
+    # Remove the constraint on rendercanvas, let downstream project constrain themselves.
+    # https://github.com/pygfx/pygfx/commit/bf2d32983d44e5ddedd47df7edf0ebb33f8f9097
+    - sed -i.bak '/"rendercanvas >=/d' pyproject.toml
+    - rm pyproject.toml.bak
+    - {{ PYTHON }} -m pip install . -vv
+  number: 0
 
 requirements:
   host:
@@ -24,7 +29,7 @@ requirements:
     - flit-core
   run:
     - python >={{ python_min }}
-    - rendercanvas >=2
+    - rendercanvas >=2.2
     - numpy
     - wgpu-py >=0.24.0,<0.28
     - pylinalg >=0.6.8,<0.7.0
