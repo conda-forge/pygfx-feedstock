@@ -17,6 +17,7 @@ build:
     # Remove the constraint on rendercanvas, let downstream project constrain themselves.
     # https://github.com/pygfx/pygfx/commit/bf2d32983d44e5ddedd47df7edf0ebb33f8f9097
     - sed -i.bak '/"rendercanvas >=/d' pyproject.toml
+    - rm pyproject.toml.bak
     - sed -i.bak '/"wgpu >=/d' pyproject.toml
     - rm pyproject.toml.bak
     - {{ PYTHON }} -m pip install . -vv
