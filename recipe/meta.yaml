@@ -11,17 +11,8 @@ source:
 
 build:
   noarch: python
-  script:
-    # The rendercanvas breakage was somewhat hard for a few people.
-    # However, i don't think it is worth constraining too much
-    # Remove the constraint on rendercanvas, let downstream project constrain themselves.
-    # https://github.com/pygfx/pygfx/commit/bf2d32983d44e5ddedd47df7edf0ebb33f8f9097
-    - sed -i.bak '/"rendercanvas >=/d' pyproject.toml
-    - rm pyproject.toml.bak
-    - sed -i.bak '/"wgpu >=/d' pyproject.toml
-    - rm pyproject.toml.bak
-    - {{ PYTHON }} -m pip install . -vv
-  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 2
 
 requirements:
   host:
@@ -31,9 +22,9 @@ requirements:
     - flit-core
   run:
     - python >={{ python_min }}
-    - rendercanvas >=2.2
+    - rendercanvas >=2.2,<2.4
     - numpy
-    - wgpu-py >=0.24.0,<0.29
+    - wgpu-py >=0.24.0,<0.28
     - pylinalg >=0.6.8,<0.7.0
     - freetype-py
     - uharfbuzz
