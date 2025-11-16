@@ -24,7 +24,7 @@ requirements:
     - python >={{ python_min }}
     - numpy
     - rendercanvas >=2.2,!=2.3.0,!=2.4.0
-    - wgpu >=0.24.0,<0.30
+    - wgpu-py >=0.24.0,<0.30
     - pylinalg >=0.6.8,<0.7.0
     - freetype-py
     - uharfbuzz
