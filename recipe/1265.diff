@@ -1,0 +1,13 @@
+diff --git a/pygfx/renderers/wgpu/engine/utils.py b/pygfx/renderers/wgpu/engine/utils.py
+index f11acd3a3..72ba8d8e8 100644
+--- a/pygfx/renderers/wgpu/engine/utils.py
++++ b/pygfx/renderers/wgpu/engine/utils.py
+@@ -238,7 +238,7 @@ def generate_uniform_struct(dtype_struct, structname):
+ class JsonEncoderWithWgpuSupport(json.JSONEncoder):
+     def default(self, ob):
+         if isinstance(ob, wgpu.GPUObjectBase):
+-            return ob.__class__.__name__ + "@" + hex(id(ob))
++            return f"{ob.__class__.__name__}@{ob.uid}"
+ 
+ 
+ jsonencoder = JsonEncoderWithWgpuSupport()

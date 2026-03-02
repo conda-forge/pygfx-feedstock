@@ -11,7 +11,7 @@ source:
   patches:
     - allow_newer_rendercanvas.diff
     # https://github.com/pygfx/pygfx/pull/1265
-    - 1265.patch
+    - 1265.diff
 
 build:
   noarch: python
