@@ -1,0 +1,214 @@
+From a31a5efb23a2d5bf7bd6982dce4399958d57b914 Mon Sep 17 00:00:00 2001
+From: Roman Reiner <reiner@nanoscribe.com>
+Date: Wed, 14 Jan 2026 09:18:51 +0100
+Subject: [PATCH 1/5] Add test for GPU object hash stability after GC
+
+---
+ tests/renderers/test_gpu_object_hash.py | 44 +++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 tests/renderers/test_gpu_object_hash.py
+
+diff --git a/tests/renderers/test_gpu_object_hash.py b/tests/renderers/test_gpu_object_hash.py
+new file mode 100644
+index 000000000..1b949d250
+--- /dev/null
++++ b/tests/renderers/test_gpu_object_hash.py
+@@ -0,0 +1,44 @@
++"""Test for GPU object hash stability across garbage collection.
++
++This tests that hash_from_value produces unique hashes for different GPU objects,
++even when Python reuses memory addresses (id() values) after garbage collection.
++
++Bug: The original implementation used id() (memory address) in the JSON encoding
++of GPU objects. When an object was garbage collected and a new object was allocated
++at the same memory address, the hash would incorrectly match the old object's hash,
++causing cache collisions in any cache using hash_from_value().
++
++Fix: Use a stable monotonically increasing counter with WeakKeyDictionary instead
++of id() to ensure each GPU object gets a unique identifier that is never reused.
++"""
++
++import gc
++import wgpu
++import pytest
++
++from pygfx.renderers.wgpu.engine.shared import get_shared
++from pygfx.renderers.wgpu.engine.utils import jsonencoder
++
++
++def test_gpu_object_json_encoding_unique():
++    """Test that JSON encoding of GPU objects produces unique strings.
++
++    This is a more direct test of the encoding mechanism. Each GPU object
++    should produce a unique JSON representation.
++    """
++    device = get_shared().device
++
++    seen_encodings = set()
++
++    for i in range(50):
++        buffer = device.create_buffer(size=256, usage=wgpu.BufferUsage.STORAGE)
++        encoding = jsonencoder.encode(buffer)
++
++        assert encoding not in seen_encodings, (
++            f"Duplicate encoding detected: {encoding}. "
++            f"Different GPU objects should have unique encodings."
++        )
++        seen_encodings.add(encoding)
++
++        del buffer
++        gc.collect()
+
+From 33f9662c8595ef83a5060159598c43187c196814 Mon Sep 17 00:00:00 2001
+From: Roman Reiner <reiner@nanoscribe.com>
+Date: Wed, 14 Jan 2026 09:19:50 +0100
+Subject: [PATCH 2/5] Fix GPU object hash collisions after GC
+
+---
+ pygfx/renderers/wgpu/engine/utils.py | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/pygfx/renderers/wgpu/engine/utils.py b/pygfx/renderers/wgpu/engine/utils.py
+index f11acd3a3..38a1de152 100644
+--- a/pygfx/renderers/wgpu/engine/utils.py
++++ b/pygfx/renderers/wgpu/engine/utils.py
+@@ -3,6 +3,7 @@
+ """
+ 
+ import json
++import weakref
+ from collections import OrderedDict
+ 
+ import wgpu
+@@ -236,9 +237,21 @@ def generate_uniform_struct(dtype_struct, structname):
+ 
+ 
+ class JsonEncoderWithWgpuSupport(json.JSONEncoder):
++    """JSON encoder that handles GPU objects with stable unique IDs for cache keys."""
++
++    _object_ids = weakref.WeakKeyDictionary()
++    _object_counter = 0
++
++    def _get_stable_id(self, ob):
++        """Get a unique ID for a GPU object that is never reused, even after GC."""
++        if ob not in self._object_ids:
++            JsonEncoderWithWgpuSupport._object_counter += 1
++            self._object_ids[ob] = self._object_counter
++        return self._object_ids[ob]
++
+     def default(self, ob):
+         if isinstance(ob, wgpu.GPUObjectBase):
+-            return ob.__class__.__name__ + "@" + hex(id(ob))
++            return ob.__class__.__name__ + "@" + str(self._get_stable_id(ob))
+ 
+ 
+ jsonencoder = JsonEncoderWithWgpuSupport()
+
+From 897ffd4c1352c3f696015827e2c42d6914b6f5c3 Mon Sep 17 00:00:00 2001
+From: Roman Reiner <reiner@nanoscribe.com>
+Date: Wed, 14 Jan 2026 11:44:54 +0100
+Subject: [PATCH 3/5] Make ruff happy
+
+---
+ tests/renderers/test_gpu_object_hash.py | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/tests/renderers/test_gpu_object_hash.py b/tests/renderers/test_gpu_object_hash.py
+index 1b949d250..8f7ba6feb 100644
+--- a/tests/renderers/test_gpu_object_hash.py
++++ b/tests/renderers/test_gpu_object_hash.py
+@@ -14,7 +14,6 @@
+ 
+ import gc
+ import wgpu
+-import pytest
+ 
+ from pygfx.renderers.wgpu.engine.shared import get_shared
+ from pygfx.renderers.wgpu.engine.utils import jsonencoder
+@@ -30,7 +29,7 @@ def test_gpu_object_json_encoding_unique():
+ 
+     seen_encodings = set()
+ 
+-    for i in range(50):
++    for _ in range(50):
+         buffer = device.create_buffer(size=256, usage=wgpu.BufferUsage.STORAGE)
+         encoding = jsonencoder.encode(buffer)
+ 
+
+From 3fd53f9c29629dc3fa8717d83dc17c166d09a745 Mon Sep 17 00:00:00 2001
+From: Roman Reiner <reiner@nanoscribe.com>
+Date: Thu, 15 Jan 2026 11:40:45 +0100
+Subject: [PATCH 4/5] Optimize GPU object ID lookup performance
+
+---
+ pygfx/renderers/wgpu/engine/utils.py | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/pygfx/renderers/wgpu/engine/utils.py b/pygfx/renderers/wgpu/engine/utils.py
+index 38a1de152..bbbae22ca 100644
+--- a/pygfx/renderers/wgpu/engine/utils.py
++++ b/pygfx/renderers/wgpu/engine/utils.py
+@@ -242,16 +242,13 @@ class JsonEncoderWithWgpuSupport(json.JSONEncoder):
+     _object_ids = weakref.WeakKeyDictionary()
+     _object_counter = 0
+ 
+-    def _get_stable_id(self, ob):
+-        """Get a unique ID for a GPU object that is never reused, even after GC."""
+-        if ob not in self._object_ids:
+-            JsonEncoderWithWgpuSupport._object_counter += 1
+-            self._object_ids[ob] = self._object_counter
+-        return self._object_ids[ob]
+-
+     def default(self, ob):
+         if isinstance(ob, wgpu.GPUObjectBase):
+-            return ob.__class__.__name__ + "@" + str(self._get_stable_id(ob))
++            object_id = self._object_ids.get(ob)
++            if object_id is None:
++                JsonEncoderWithWgpuSupport._object_counter += 1
++                object_id = self._object_ids[ob] = str(self._object_counter)
++            return f"{ob.__class__.__name__}@{object_id}"
+ 
+ 
+ jsonencoder = JsonEncoderWithWgpuSupport()
+
+From e1954620c11a0a9a2cde6c1e19035709e3b17e45 Mon Sep 17 00:00:00 2001
+From: Roman Reiner <reiner@nanoscribe.com>
+Date: Mon, 2 Mar 2026 09:46:03 +0100
+Subject: [PATCH 5/5] Use GPUObjectBase.uid
+
+---
+ pygfx/renderers/wgpu/engine/utils.py | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/pygfx/renderers/wgpu/engine/utils.py b/pygfx/renderers/wgpu/engine/utils.py
+index bbbae22ca..72ba8d8e8 100644
+--- a/pygfx/renderers/wgpu/engine/utils.py
++++ b/pygfx/renderers/wgpu/engine/utils.py
+@@ -3,7 +3,6 @@
+ """
+ 
+ import json
+-import weakref
+ from collections import OrderedDict
+ 
+ import wgpu
+@@ -237,18 +236,9 @@ def generate_uniform_struct(dtype_struct, structname):
+ 
+ 
+ class JsonEncoderWithWgpuSupport(json.JSONEncoder):
+-    """JSON encoder that handles GPU objects with stable unique IDs for cache keys."""
+-
+-    _object_ids = weakref.WeakKeyDictionary()
+-    _object_counter = 0
+-
+     def default(self, ob):
+         if isinstance(ob, wgpu.GPUObjectBase):
+-            object_id = self._object_ids.get(ob)
+-            if object_id is None:
+-                JsonEncoderWithWgpuSupport._object_counter += 1
+-                object_id = self._object_ids[ob] = str(self._object_counter)
+-            return f"{ob.__class__.__name__}@{object_id}"
++            return f"{ob.__class__.__name__}@{ob.uid}"
+ 
+ 
+ jsonencoder = JsonEncoderWithWgpuSupport()

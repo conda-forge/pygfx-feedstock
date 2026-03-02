@@ -8,11 +8,15 @@ package:
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
   sha256: 917d05b9a636c81af4754aeca50af8f95f6a29612c6341f64b5a8f069522edc3
+  patches:
+    - allow_newer_rendercanvas.diff
+    # https://github.com/pygfx/pygfx/pull/1265
+    - 1265.patch
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 100
 
 requirements:
   host:
@@ -23,8 +27,8 @@ requirements:
   run:
     - python >={{ python_min }}
     - numpy
-    - rendercanvas >=2.2,!=2.3.0,!=2.4.0
-    - wgpu-py >=0.24.0,<0.30
+    - rendercanvas >=2.6.1
+    - wgpu-py >=0.30.1
     - pylinalg >=0.6.8,<0.7.0
     - freetype-py
     - uharfbuzz
