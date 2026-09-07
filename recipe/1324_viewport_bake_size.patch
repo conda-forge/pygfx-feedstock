@@ -1,0 +1,32 @@
+Backport of upstream pygfx PR #1324 (open at the time of writing):
+"Give bake functions the viewport size, not the canvas size"
+
+    https://github.com/pygfx/pygfx/pull/1324
+
+renderer.render(..., rect=...) already computes scene_lsize, the logical size
+of the region being drawn into, but handed call_bake_functions the size of the
+whole canvas.  The line shader's bake function uses that size to convert ndc to
+logical pixels for the cumulative distance a dash pattern is measured along, so
+a dashed line with thickness_space="screen" drawn into a sub-viewport came out
+with its dashes scaled by the canvas/viewport ratio (measured: 12.0 px against
+the 31.4 px the pattern asks for, on a 300 px viewport in a 900 px canvas).
+
+The upstream commit also adds a test; it lives outside the sdist, so only the
+pygfx/ hunk is backported here.
+
+diff --git a/pygfx/renderers/wgpu/engine/renderer.py b/pygfx/renderers/wgpu/engine/renderer.py
+index 3337dd7..1b993b2 100644
+--- a/pygfx/renderers/wgpu/engine/renderer.py
++++ b/pygfx/renderers/wgpu/engine/renderer.py
+@@ -742,7 +742,7 @@ class WgpuRenderer(RootEventHandler, Renderer):
+         flat.collect_pipelines_container_groups(renderstate)
+ 
+         # Enable pipelines to update data on the CPU.
+-        flat.call_bake_functions(camera, logical_size)
++        flat.call_bake_functions(camera, scene_lsize)
+ 
+         # Update *all* buffers and textures that have changed
+         for resource in resource_update_registry.get_syncable_resources(flush=True):
+-- 
+2.55.0
+

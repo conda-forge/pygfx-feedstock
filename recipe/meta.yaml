@@ -1,5 +1,4 @@
 {% set version = "0.17.0" %}
-{% set python_min = "3.10" %}
 
 package:
   name: pygfx
@@ -8,11 +7,17 @@ package:
 source:
   url: https://pypi.org/packages/source/p/pygfx/pygfx-{{ version }}.tar.gz
   sha256: 97759f7e4e8a35b278dab04426fd1b89a32499b117035d3e6074f69990b31553
+  patches:
+    # Fix dashing on line loops -- https://github.com/pygfx/pygfx/pull/1315
+    - 1315_fix_dashing_on_line_loops.patch
+    # Bake with the viewport size, not the canvas size
+    # https://github.com/pygfx/pygfx/pull/1324
+    - 1324_viewport_bake_size.patch
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
 
 requirements:
   host:
