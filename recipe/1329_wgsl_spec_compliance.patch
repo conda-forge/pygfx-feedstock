@@ -1,0 +1,74 @@
+Backport of upstream pygfx PR #1329 (open at the time of writing):
+"Make the generated WGSL comply with the spec"
+
+    https://github.com/pygfx/pygfx/pull/1329
+
+Fixes three constructs that naga accepts but that are invalid WGSL, and that
+Tint (Dawn's WGSL compiler) rejects at shader creation:
+
+- Integral user-defined vertex outputs must use flat interpolation; the
+  Varyings struct now adds @interpolate(flat) to i32/u32 varyings.
+- A const-expression evaluating to NaN is a shader-creation error; the NaN for
+  degenerate line vertices is now computed from a var at runtime.
+- Bitwise and arithmetic operators cannot be mixed without parentheses; two
+  expressions in noise.wgsl are parenthesized as naga already parsed them.
+
+The upstream commit also adds a test; only the pygfx/ hunks are backported here.
+
+diff --git a/pygfx/renderers/wgpu/shader/resolve.py b/pygfx/renderers/wgpu/shader/resolve.py
+index bd9b7f37b..432e2afb7 100644
+--- a/pygfx/renderers/wgpu/shader/resolve.py
++++ b/pygfx/renderers/wgpu/shader/resolve.py
+@@ -234,7 +234,14 @@ def update_lines(self, lines):
+             # Build struct
+             struct_lines = ["struct Varyings {"]
+             for slotnr, name in enumerate(used_slots):
+-                struct_lines.append(f"    @location({slotnr}) {name} : {types[name]},")
++                # WGSL requires integral user-defined vertex outputs to use flat interpolation
++                type = types[name]
++                interpolate = (
++                    " @interpolate(flat)" if "i32" in type or "u32" in type else ""
++                )
++                struct_lines.append(
++                    f"    @location({slotnr}){interpolate} {name} : {type},"
++                )
+             for name in sorted(used_builtins):
+                 struct_lines.append(f"    @builtin({name}) {name} : {types[name]},")
+             struct_lines.append("};\n")
+diff --git a/pygfx/renderers/wgpu/wgsl/line.wgsl b/pygfx/renderers/wgpu/wgsl/line.wgsl
+index 276c769b2..2405425eb 100644
+--- a/pygfx/renderers/wgpu/wgsl/line.wgsl
++++ b/pygfx/renderers/wgpu/wgsl/line.wgsl
+@@ -674,7 +674,9 @@ fn vs_main(in: VertexInput) -> Varyings {
+     } else if (is_connecting_node_in_loop) {
+         valid_array[vertex_index] = 0.0;
+         if (vertex_index > 1) {
+-            the_pos_n = vec4<f32>(bitcast<f32>(0x7fc00000u));  // nan
++            // A runtime value, because a nan from a const-expression is a shader-creation error in WGSL
++            var nan_bits = 0x7fc00000u;
++            the_pos_n = vec4<f32>(bitcast<f32>(nan_bits));  // nan
+         }
+     }
+     $$ endif
+diff --git a/pygfx/renderers/wgpu/wgsl/noise.wgsl b/pygfx/renderers/wgpu/wgsl/noise.wgsl
+index 52d05b4f8..f1201fbea 100644
+--- a/pygfx/renderers/wgpu/wgsl/noise.wgsl
++++ b/pygfx/renderers/wgpu/wgsl/noise.wgsl
+@@ -87,7 +87,7 @@ fn blueNoise2(xy: vec2u) -> f32 {
+         y = y >> 1u;
+         a = 1u & (a ^ _xmix(x, y));
+         b = 1u & (b ^ _ymix(x, y));
+-        v = (v << 2u) | (a + (b << 1u) + 1u) % 4u;
++        v = (v << 2u) | ((a + (b << 1u) + 1u) % 4u);
+     }
+     return f32(v) / f32(1u << (s << 1u));
+     }
+@@ -104,7 +104,7 @@ fn bayerPattern(xy: vec2u) -> f32 {
+     var y = xy.y;
+     var v = 0u;
+     for (var i = 0u; i < 8; i+=1) {
+-        v = (v << 2u) | ((x & 1u) + ((y & 1u) << 1u) + 1u) % 4u;
++        v = (v << 2u) | (((x & 1u) + ((y & 1u) << 1u) + 1u) % 4u);
+         x >>= 1u;
+         y >>= 1u;
+     }
