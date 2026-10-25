@@ -1,0 +1,67 @@
+Backport of upstream pygfx PR #1325 (open at the time of writing):
+"Add physical_offset to stdinfo_data accessible in shader"
+
+    https://github.com/pygfx/pygfx/pull/1325
+
+Adds physical_offset (the viewport origin on the framebuffer, in physical
+pixels) to the stdinfo uniform, so shaders can locate a fragment within its
+own viewport. Without it, physical_size alone is not meaningful when rendering
+into a sub-viewport. The example and screenshot hunks are dropped since
+examples are not in the sdist.
+
+diff --git a/pygfx/renderers/wgpu/engine/renderer.py b/pygfx/renderers/wgpu/engine/renderer.py
+index 1b993b2..a6b1e13 100644
+--- a/pygfx/renderers/wgpu/engine/renderer.py
++++ b/pygfx/renderers/wgpu/engine/renderer.py
+@@ -696,6 +696,11 @@ class WgpuRenderer(RootEventHandler, Renderer):
+                 "The viewport rect must be None or 4 elements (x, y, w, h)."
+             )
+ 
++        # Where the viewport starts on the framebuffer, in physical pixels.
++        # This is the origin that @builtin(position) is measured from, so a
++        # shader needs it to place a fragment inside its own viewport.
++        scene_poffset = physical_viewport[0], physical_viewport[1]
++
+         # Apply the camera's native size (do this before we change scene_lsize based on view_offset)
+         camera.set_view_size(*scene_lsize)
+ 
+@@ -732,7 +737,9 @@ class WgpuRenderer(RootEventHandler, Renderer):
+         self._shared.pre_render_hook()
+ 
+         # Update stdinfo uniform buffer object that we'll use during this render call
+-        self._update_stdinfo_buffer(camera, scene_psize, scene_lsize, ndc_offset)
++        self._update_stdinfo_buffer(
++            camera, scene_psize, scene_poffset, scene_lsize, ndc_offset
++        )
+ 
+         # Get renderstate object
+         renderstate = get_renderstate(flat.lights, self._blender)
+@@ -921,7 +928,7 @@ class WgpuRenderer(RootEventHandler, Renderer):
+         return [command_encoder.finish()]
+ 
+     def _update_stdinfo_buffer(
+-        self, camera: Camera, physical_size, logical_size, ndc_offset
++        self, camera: Camera, physical_size, physical_offset, logical_size, ndc_offset
+     ):
+         # Update the stdinfo buffer's data
+         # All matrices need to be transposed, because in WGSL they are column-major.
+@@ -935,6 +942,7 @@ class WgpuRenderer(RootEventHandler, Renderer):
+         # stdinfo_data["ndc_to_world"].flat = la.mat_inverse(stdinfo_data["cam_transform"] @ stdinfo_data["projection_transform"])
+         stdinfo_data["ndc_offset"] = ndc_offset
+         stdinfo_data["physical_size"] = physical_size
++        stdinfo_data["physical_offset"] = physical_offset
+         stdinfo_data["logical_size"] = logical_size
+         # Upload to GPU
+         self._shared.uniform_buffer.update_full()
+diff --git a/pygfx/renderers/wgpu/engine/shared.py b/pygfx/renderers/wgpu/engine/shared.py
+index c1acfba..188ab8c 100644
+--- a/pygfx/renderers/wgpu/engine/shared.py
++++ b/pygfx/renderers/wgpu/engine/shared.py
+@@ -24,6 +24,7 @@ stdinfo_uniform_type = dict(
+     projection_transform_inv="4x4xf4",
+     ndc_offset="4xf4",
+     physical_size="2xf4",
++    physical_offset="2xf4",
+     logical_size="2xf4",
+ )
+ 
