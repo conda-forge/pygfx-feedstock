@@ -16,11 +16,14 @@ source:
     # Make the generated WGSL comply with the spec
     # https://github.com/pygfx/pygfx/pull/1329
     - 1329_wgsl_spec_compliance.patch
+    # Add physical_offset to the stdinfo uniform
+    # https://github.com/pygfx/pygfx/pull/1325
+    - 1325_physical_offset_in_stdinfo.patch
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 2
+  number: 3
 
 requirements:
   host:
