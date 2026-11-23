@@ -1,0 +1,52 @@
+Call textureSample only in uniform control flow
+
+Backport of https://github.com/pygfx/pygfx/pull/1348
+(commit b8e8f86d30af99f865c45b4edd628672bd39f014), library hunks only.
+
+diff --git a/pygfx/renderers/wgpu/wgsl/light_toon.wgsl b/pygfx/renderers/wgpu/wgsl/light_toon.wgsl
+index 010f1b507..eb2ed1502 100644
+--- a/pygfx/renderers/wgpu/wgsl/light_toon.wgsl
++++ b/pygfx/renderers/wgpu/wgsl/light_toon.wgsl
+@@ -9,7 +9,9 @@ fn getGradientIrradiance( normal: vec3<f32>, light_dir: vec3<f32> ) -> vec3<f32>
+     let coord = vec2f(dot_nl *0.5 + 0.5, 0.0);
+ 
+     $$ if use_gradient_map is defined
+-        return vec3f(textureSample(t_gradient_map, s_gradient_map, coord).r);
++        // Not textureSample, which WGSL only allows in uniform control flow: this is called
++        // in the loop over the lights, which can skip a light depending on the fragment.
++        return vec3f(textureSampleLevel(t_gradient_map, s_gradient_map, coord, 0.0).r);
+     $$ else
+         let fw = fwidth(coord) * 0.5;
+         return mix( vec3f(0.7), vec3f(1.0), smoothstep(0.7-fw.x, 0.7+fw.x, coord.x) );
+diff --git a/pygfx/renderers/wgpu/wgsl/points.wgsl b/pygfx/renderers/wgpu/wgsl/points.wgsl
+index 8640e30b6..4fece90cf 100644
+--- a/pygfx/renderers/wgpu/wgsl/points.wgsl
++++ b/pygfx/renderers/wgpu/wgsl/points.wgsl
+@@ -321,10 +321,11 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
+     // For sprites, multiply face_color with sprite color
+     $$ if is_sprite == 2
+         let sprite_coord = (pointcoord_p + half_size_p) / (2.0 * half_size_p);
++        // Sampled before the branch: WGSL only allows textureSample in uniform control flow.
++        let sprite_value = textureSample(t_sprite, s_sprite, sprite_coord);
+         if (min(sprite_coord.x, sprite_coord.y) < 0.0 || max(sprite_coord.x, sprite_coord.y) > 1.0) {
+             face_color = vec4<f32>(face_color.rgb, 0.0);  // out of sprite range
+         } else {
+-            let sprite_value = textureSample(t_sprite, s_sprite, sprite_coord);
+             $$ if sprite_nchannels == 1
+                 face_color = vec4<f32>(face_color.rgb * sprite_value.r, face_color.a);
+             $$ elif sprite_nchannels == 2
+diff --git a/pygfx/renderers/wgpu/wgsl/volume_common.wgsl b/pygfx/renderers/wgpu/wgsl/volume_common.wgsl
+index 29ccde548..d16f9156d 100644
+--- a/pygfx/renderers/wgpu/wgsl/volume_common.wgsl
++++ b/pygfx/renderers/wgpu/wgsl/volume_common.wgsl
+@@ -21,7 +21,9 @@ fn sample_vol(texcoord: vec3<f32>, sizef: vec3<f32>) -> vec4<f32> {
+     $$ if interpolation == 'via-sampler'
+         // Using a sampler with either linear or nearest interpolation.
+         // This path means that interpolation can be changed by only swapping the sampler.
+-        return textureSample(t_img, s_vol, texcoord.xyz);
++        // Not textureSample, which WGSL only allows in uniform control flow: the raycaster
++        // calls this in a loop of which the length depends on the fragment.
++        return textureSampleLevel(t_img, s_vol, texcoord.xyz, 0.0);
+ 
+     $$ else
+         // Hard-coded interpolation using textureLoad

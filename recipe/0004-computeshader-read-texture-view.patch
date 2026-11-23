@@ -1,0 +1,27 @@
+Let ComputeShader bind a texture that the shader reads
+
+Backport of https://github.com/pygfx/pygfx/pull/1350
+(commit 693d524f68e7ba027bcfc8349df4b96a630116ac), library hunks only.
+
+diff --git a/pygfx/utils/compute.py b/pygfx/utils/compute.py
+index 090922331..cfdcef13a 100644
+--- a/pygfx/utils/compute.py
++++ b/pygfx/utils/compute.py
+@@ -170,9 +170,14 @@ def _get_bindings_from_resources(self):
+                 bindings.append(
+                     {
+                         "binding": index,
+-                        "resource": wgpu_object.create_view(
+-                            usage=wgpu.TextureUsage.STORAGE_BINDING
+-                        ),
++                        # A view with all the usages of the texture, not only
++                        # STORAGE_BINDING: the usage that is needed depends on how the
++                        # shader declares the binding. A texture_storage_2d needs
++                        # STORAGE_BINDING, but a texture_2d that the shader reads with
++                        # textureLoad needs TEXTURE_BINDING. The image_histogram example
++                        # does the latter: its texture has both usages, but a view
++                        # with only STORAGE_BINDING makes its bind group invalid.
++                        "resource": wgpu_object.create_view(),
+                     }
+                 )
+             else:

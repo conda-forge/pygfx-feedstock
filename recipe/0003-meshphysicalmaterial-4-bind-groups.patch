@@ -1,0 +1,138 @@
+Keep MeshPhysicalMaterial within 4 bind groups
+
+Backport of https://github.com/pygfx/pygfx/pull/1349
+(commits c03394e8e90fbb2ece16800fdba8b4a900efd8d8, 46c339858a9f019d4833a2b58267c753f1e1a492), library hunks only.
+
+diff --git a/pygfx/renderers/wgpu/shaders/meshshader.py b/pygfx/renderers/wgpu/shaders/meshshader.py
+index ea3d10d01..a73022bcc 100644
+--- a/pygfx/renderers/wgpu/shaders/meshshader.py
++++ b/pygfx/renderers/wgpu/shaders/meshshader.py
+@@ -348,11 +348,30 @@ def get_bindings(self, wobject, shared, scene):
+                 "VERTEX",
+             )
+ 
+-        return {
++        result = {
+             0: bindings,
+             1: bindings1,
+         }
+ 
++        # Bind group 2 and up: collected by _prepare_bind_groups(), defined here
++        for group, group_bindings in self._prepare_bind_groups(
++            wobject, shared, scene
++        ).items():
++            group_bindings = {i: binding for i, binding in enumerate(group_bindings)}
++            self.define_bindings(group, group_bindings)
++            result[group] = group_bindings
++
++        return result
++
++    def _prepare_bind_groups(self, wobject, shared, scene):
++        """Return the bindings of bind group 2 and up, as {group: [binding, ...]}.
++
++        Subclasses add their bindings to the lists of their base class rather
++        than starting a new bind group: WebGPU guarantees only 4 bind groups,
++        and the renderer uses one of them.
++        """
++        return {}
++
+     def _encode_morph_texture(self, geometry, shared):
+         morph_positions = getattr(geometry, "morph_positions", None)
+         morph_normals = getattr(geometry, "morph_normals", None)
+@@ -527,13 +546,13 @@ def __init__(self, wobject):
+         super().__init__(wobject)
+         self["lighting"] = "toon"
+ 
+-    def get_bindings(self, wobject, shared, scene):
+-        result = super().get_bindings(wobject, shared, scene)
++    def _prepare_bind_groups(self, wobject, shared, scene):
++        bind_groups = super()._prepare_bind_groups(wobject, shared, scene)
+ 
+         geometry = wobject.geometry
+         material = wobject.material
+ 
+-        bindings = []
++        bindings = bind_groups.setdefault(2, [])
+ 
+         if material.gradient_map is not None:
+             bindings.extend(
+@@ -543,13 +562,7 @@ def get_bindings(self, wobject, shared, scene):
+             )
+             self["use_gradient_map"] = True
+ 
+-        # Define shader code for binding
+-        bindings = {i: binding for i, binding in enumerate(bindings)}
+-        self.define_bindings(2, bindings)
+-
+-        # Update result
+-        result[2] = bindings
+-        return result
++        return bind_groups
+ 
+ 
+ @register_wgpu_render_function(WorldObject, MeshStandardMaterial)
+@@ -558,13 +571,13 @@ def __init__(self, wobject):
+         super().__init__(wobject)
+         self["lighting"] = "pbr"
+ 
+-    def get_bindings(self, wobject, shared, scene):
+-        result = super().get_bindings(wobject, shared, scene)
++    def _prepare_bind_groups(self, wobject, shared, scene):
++        bind_groups = super()._prepare_bind_groups(wobject, shared, scene)
+ 
+         geometry = wobject.geometry
+         material = wobject.material
+ 
+-        bindings = []
++        bindings = bind_groups.setdefault(2, [])
+ 
+         env_map = getattr(material, "env_map", None) or getattr(
+             scene, "environment", None
+@@ -608,13 +621,7 @@ def get_bindings(self, wobject, shared, scene):
+             )
+             self["use_metalness_map"] = True
+ 
+-        # Define shader code for binding
+-        bindings = {i: binding for i, binding in enumerate(bindings)}
+-        self.define_bindings(2, bindings)
+-
+-        # Update result
+-        result[2] = bindings
+-        return result
++        return bind_groups
+ 
+ 
+ @register_wgpu_render_function(WorldObject, MeshPhysicalMaterial)
+@@ -625,13 +632,14 @@ def __init__(self, wobject):
+         self["USE_IOR"] = True
+         self["USE_SPECULAR"] = True
+ 
+-    def get_bindings(self, wobject, shared, scene):
+-        result = super().get_bindings(wobject, shared, scene)
++    def _prepare_bind_groups(self, wobject, shared, scene):
++        bind_groups = super()._prepare_bind_groups(wobject, shared, scene)
+ 
+         geometry = wobject.geometry
+         material = wobject.material
+ 
+-        bindings = []
++        # In the bind group of the standard material, after its bindings
++        bindings = bind_groups[2]
+ 
+         if material.specular_intensity_map is not None:
+             bindings.extend(
+@@ -725,13 +733,7 @@ def get_bindings(self, wobject, shared, scene):
+                 )
+                 self["use_anisotropy_map"] = True
+ 
+-        # Define shader code for binding
+-        bindings = {i: binding for i, binding in enumerate(bindings)}
+-        self.define_bindings(3, bindings)
+-
+-        # Update result
+-        result[3] = bindings
+-        return result
++        return bind_groups
+ 
+ 
+ @register_wgpu_render_function(Mesh, MeshNormalLinesMaterial)

@@ -1,0 +1,24 @@
+Apply Material.stencil_value changes after the first draw
+
+Backport of https://github.com/pygfx/pygfx/pull/1353
+(commit e6beebf04ffb43a123d9bcaa6825632e0c0a7fe0), library hunk only.
+
+diff --git a/pygfx/materials/_base.py b/pygfx/materials/_base.py
+index c7c11a74b..4ed0c73dd 100644
+--- a/pygfx/materials/_base.py
++++ b/pygfx/materials/_base.py
+@@ -794,10 +794,12 @@ def stencil_masks(self, read_write: tuple[int, int]):
+     @property
+     def stencil_value(self) -> int:
+         """Defines the reference stencil value for this object. Default 0."""
+-        return self._stencil_value
++        return self._store.stencil_value
+ 
+     @stencil_value.setter
+     def stencil_value(self, value: int):
+-        self._stencil_value = int(value)  # applied at each draw, so not saved on store
++        # Kept on the store so a change is tracked: the renderer reads it into
++        # the render info, which is then refreshed (no pipeline rebuild needed).
++        self._store.stencil_value = int(value)
+ 
+     # NOTE: we have not implemented read_mask and write_mask yet; they are assumed 0xff for now

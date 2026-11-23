@@ -1,0 +1,129 @@
+Use a counter, not the clock, for last_modified
+
+Backport of https://github.com/pygfx/pygfx/pull/1351
+(commit 2b962af80b2d70ae738793ffb4b5ce5ce9e02a3a), library hunks only.
+
+diff --git a/pygfx/cameras/_base.py b/pygfx/cameras/_base.py
+index abc78cf02..0510e0fe2 100644
+--- a/pygfx/cameras/_base.py
++++ b/pygfx/cameras/_base.py
+@@ -1,10 +1,8 @@
+-from time import perf_counter_ns
+-
+ import numpy as np
+ import pylinalg as la
+ 
+ from ..objects._base import WorldObject
+-from ..utils.transform import cached
++from ..utils.transform import cached, modification_stamp
+ 
+ 
+ class Camera(WorldObject):
+@@ -27,13 +25,13 @@ class Camera(WorldObject):
+ 
+     def __init__(self):
+         super().__init__()
+-        self._last_modified = perf_counter_ns()
++        self._last_modified = modification_stamp()
+ 
+         self._view_size = 1.0, 1.0
+         self._view_offset = None
+ 
+     def flag_update(self):
+-        self._last_modified = perf_counter_ns()
++        self._last_modified = modification_stamp()
+ 
+     @property
+     def last_modified(self) -> int:
+diff --git a/pygfx/objects/_base.py b/pygfx/objects/_base.py
+index 0eb034951..7a28b3352 100644
+--- a/pygfx/objects/_base.py
++++ b/pygfx/objects/_base.py
+@@ -5,7 +5,6 @@
+ import threading
+ from typing import Any, Callable, ClassVar, Iterator, List, Tuple
+ import pylinalg as la
+-from time import perf_counter_ns
+ 
+ import numpy as np
+ 
+@@ -17,6 +16,7 @@
+ from ..utils.transform import (
+     AffineTransform,
+     RecursiveTransform,
++    modification_stamp,
+ )
+ from ..geometries import Geometry
+ from ..materials import Material
+@@ -163,7 +163,7 @@ def __init__(
+         buffer.data["world_transform"] = np.eye(4)
+         buffer.data["world_transform_inv"] = np.eye(4)
+ 
+-        self._world_last_modified = perf_counter_ns()
++        self._world_last_modified = modification_stamp()
+ 
+         #: The object's transform expressed in parent space.
+         self.local = AffineTransform(is_camera_space=self._FORWARD_IS_MINUS_Z)
+diff --git a/pygfx/utils/transform.py b/pygfx/utils/transform.py
+index 355e7d421..e863fa1e5 100644
+--- a/pygfx/utils/transform.py
++++ b/pygfx/utils/transform.py
+@@ -1,14 +1,21 @@
+ from __future__ import annotations
+ 
++import itertools
++
+ import numpy as np
+ import pylinalg as la
+-from time import perf_counter_ns
+ 
+ from typing import Any, Tuple, Union
+ 
+ 
+ PRECISION_EPSILON = 1e-7
+ 
++# Returns a new value for ``last_modified`` on every call: 1, 2, 3, ...
++# A counter, not a clock: perf_counter_ns() does not have a high resolution on
++# every platform (browsers, where Pyodide runs, limit timers to 0.1 to 1 ms on
++# purpose), and two changes that get the same time lose the second one.
++modification_stamp = itertools.count(1).__next__
++
+ 
+ class cached:  # noqa: N801
+     """Cache for computed properties.
+@@ -507,7 +514,7 @@ def __init__(
+     ) -> None:
+         super().__init__(reference_up=reference_up, is_camera_space=is_camera_space)
+         self._state_basis = state_basis
+-        self.last_modified = perf_counter_ns()
++        self.last_modified = modification_stamp()
+ 
+         self._position = np.asarray(position, dtype=float)
+         self._rotation = np.asarray(rotation, dtype=float)
+@@ -535,7 +542,7 @@ def flag_update(self):
+         """Signal that this transform has updated."""
+         # note: this function has been heavily micro-optimized
+         # please don't modify it carelessly
+-        last_modified = perf_counter_ns()
++        last_modified = modification_stamp()
+         self.last_modified = last_modified
+         if wrapper := self._wrapper:
+             wrapper.flag_update(last_modified)
+@@ -822,7 +829,7 @@ def __init__(
+         is_camera_space=False,
+     ) -> None:
+         super().__init__(reference_up=reference_up, is_camera_space=is_camera_space)
+-        self.last_modified = perf_counter_ns()
++        self.last_modified = modification_stamp()
+         self._parent = parent
+         self.children = []
+         self.own = base
+@@ -833,7 +840,7 @@ def flag_update(self, last_modified=None):
+         # note: this function has been heavily micro-optimized
+         # please don't modify it carelessly
+         if last_modified is None:
+-            last_modified = perf_counter_ns()
++            last_modified = modification_stamp()
+         self.last_modified = last_modified
+         if children := self.children:
+             for child in children:
